@@ -169,3 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+#Random plots should not be committed
+plots/*
+
+
+
