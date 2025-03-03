@@ -2,7 +2,7 @@ import pyshark
 import pandas as pd
 
 class pcap_reader:
-    def load_pcapng_to_pd(path: str) -> pd.DataFrame:
+    def load_pcapng_to_pd(self, path: str) -> pd.DataFrame:
 
         cap = pyshark.FileCapture(path)
         cap.keep_packets = False
@@ -17,16 +17,29 @@ class pcap_reader:
                     "Source IP": packet.ip.src,
                     "Destination IP": packet.ip.dst,
                     "Source Port": packet.tcp.srcport,
-                    "Destination Port": packet.tcp.dstport
+                    "Destination Port": packet.tcp.dstport,
+                    "Inter_message Delay": pd.NaT
                 })
 
         cap.close()
 
+        df = pd.DataFrame(data)
+        df_imd = self.add_imd_to_df(df)
 
+        return df_imd
 
-        return pd.DataFrame(data)
-    
-    def add_imd_to_df(df: pd.DataFrame) -> pd.DataFrame:
+    def add_imd_to_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        for src_ip in df["Source IP"].unique():
+            packets = df.query("`Source IP` == @src_ip")
 
+            for rec_ip in packets["Destination IP"].unique():
+                communication = packets.query("`Destination IP` == @rec_ip").sort_values(by=["Timestamp"])
 
-        pass
+                indices = communication.index
+                previous_index = indices.to_list().pop(0)
+
+                for index in indices:
+                    df.at[index, "Inter_message Delay"] = df.at[index, "Timestamp"] - df.at[previous_index, "Timestamp"]
+                    previous_index = index
+
+        return df

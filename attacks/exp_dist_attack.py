@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import pandas as pd
-import attacks.utils.pcap_to_pd_reader as reader
+from utils.pcap_to_pd_reader import pcap_reader
 
 class deniable_traffic_generator:
     def make_random_exp_dist_imd(self, median, length) -> list[float]:
@@ -79,7 +79,7 @@ def multi_eval(args):
     args['iterations'] = splits
 
     for split in range(0, process_count):
-        if split != []:
+        if split:
             recv_end, send_end = mp.Pipe(False)
             t = mp.Process(target=evaluate_approach, args=(send_end,), kwargs=arg)
             tasks.append(t)
@@ -155,12 +155,19 @@ if __name__ == '__main__':
 
     res = dta.find_deniable_subsequences(den_imd, dta.calc_mle(reg_imd))
 
-    rd = reader.pcap_reader()
+    rd = pcap_reader()
 
-    df = rd.load_pcapng_to_pd("random_cap.pcapng")
-    print(df)
+    df = rd.load_pcapng_to_pd("/home/arthur/p10/traffic_analysis/random_cap.pcapng")
+    df.dropna()
 
-    # TODO: Evaluate precisio, recall and accuracy
+    res = df.query("`Source IP` != `Destination IP`")
+
+    print(res)
+
+
+
+
+    # TODO: Evaluate precision, recall and accuracy
     # #How often the positive classification is correct.
     # print(f"Precision = {tp / (tp + fp)}") 
     
@@ -171,29 +178,3 @@ if __name__ == '__main__':
     # print(f"Accuracy = {(tp + tn) / (tp + fp + tn + fn)}") 
 
 
-    # TODO: Make visualizer
-    # Plot histogram
-    #plt.hist(total_imd, bins=30, density=True, alpha=0.6, color='b')
-
-
-    # # Plot theoretical PDF
-    # x = np.linspace(0, 20, 20)
-    # pdf = lambda_param * np.exp(-lambda_param * x)
-    # cdf = 1 - np.exp(-lambda_param * x)
-    # plt.plot(x, pdf, 'r', linewidth=2)
-    # plt.plot(x, cdf, 'r', linewidth=2)
-
-    # den_lambda = dta.calc_mle(deniable_imd)
-    # pdf2 = den_lambda * np.exp(-den_lambda * x)
-    # cdf2 = 1 - np.exp(-den_lambda * x)
-    # plt.plot(x, pdf2, 'g', linewidth=2)
-    # plt.plot(x, cdf2, 'g', linewidth=2)
-
-    # plt.xlabel('Value')
-    # plt.ylabel('Density')
-    # plt.title('Exponential Distribution')
-
-    # plt.savefig("plots/plot.png", format="png", dpi=300, bbox_inches="tight")
-
-    
-    #plt.show()
