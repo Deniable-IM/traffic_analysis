@@ -18,7 +18,7 @@ class pcap_reader:
                     "Destination IP": packet.ip.dst,
                     "Source Port": packet.tcp.srcport,
                     "Destination Port": packet.tcp.dstport,
-                    "Inter_message Delay": pd.NaT
+                    "Inter-Message Delay": pd.NaT
                 })
 
         cap.close()
@@ -39,7 +39,7 @@ class pcap_reader:
                 previous_index = indices.to_list().pop(0)
 
                 for index in indices:
-                    df.at[index, "Inter_message Delay"] = df.at[index, "Timestamp"] - df.at[previous_index, "Timestamp"]
+                    df.at[index, "Inter-Message Delay"] = df.at[index, "Timestamp"] - df.at[previous_index, "Timestamp"]
                     previous_index = index
 
         return df

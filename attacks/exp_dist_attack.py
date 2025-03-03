@@ -27,21 +27,21 @@ class exp_dist_attack:
         if 'minimum_length' in kwargs.keys():
             self.deniable_seq_len = kwargs['minimum_length']
 
-    def calc_mle(self, imd: list[float]) -> float:
-        return 1 / (sum(imd) / len(imd))
+    def calc_mle(self, df: pd.DataFrame) -> float:
+        return 1 / (df['Inter-Message Delay'].sum() / df['Inter-Message Delay'].count())
 
-    def calc_deniable_likelihood(self, sample_imd: list[float], lambda_param: float) -> list[tuple[float, float]]:
+    def calc_deniable_likelihood(self, df: pd.DataFrame, lambda_param: float) -> list[tuple[float, float]]:
         res = list()
         def cdf(x: float, var_lambda: float) -> float:
             return 1 - np.exp(-var_lambda*x)
 
-        for sample in sample_imd:
+        for sample in pd.to_numeric(df["Inter-Message Delay"]):
             res.append((sample, 1 - cdf(sample, lambda_param)))
         
         return res
 
-    def find_deniable_subsequences(self, sample, lambda_param):
-        probs = self.calc_deniable_likelihood(sample, lambda_param)
+    def find_deniable_subsequences(self, df: pd.DataFrame, lambda_param):
+        probs = self.calc_deniable_likelihood(df, lambda_param)
         subsequences = self.make_subsequences(probs)
         pruned = self.prune_subsequences(subsequences)
         return pruned
@@ -148,23 +148,23 @@ if __name__ == '__main__':
     arg = {"iterations": iterations, "reg_delay": reg_msg_median_delay, "reg_count": reg_msg_count, "den_delay": den_msg_median_delay, "den_count": den_msg_count, "den_filter": den_filter, "den_len": den_len}
 
 
-    dtg = deniable_traffic_generator()
-    dta = exp_dist_attack(filter=den_filter, minimum_length=den_len)
-    reg_imd = dtg.make_random_ppp_imd(100, 50000)
-    den_imd = dtg.make_random_ppp_imd(60, 100)
+    # dtg = deniable_traffic_generator()
+    # dta = exp_dist_attack(filter=den_filter, minimum_length=den_len)
+    # reg_imd = dtg.make_random_ppp_imd(100, 50000)
+    # den_imd = dtg.make_random_ppp_imd(60, 100)
 
-    res = dta.find_deniable_subsequences(den_imd, dta.calc_mle(reg_imd))
+    # res = dta.find_deniable_subsequences(den_imd, dta.calc_mle(reg_imd))
 
     rd = pcap_reader()
 
-    df = rd.load_pcapng_to_pd("/home/arthur/p10/traffic_analysis/random_cap.pcapng")
+    df = rd.load_pcapng_to_pd("random_cap.pcapng") # Set path to the correct file
     df.dropna()
-
     res = df.query("`Source IP` != `Destination IP`")
-
+    
+    
     print(res)
 
-
+    
 
 
     # TODO: Evaluate precision, recall and accuracy
