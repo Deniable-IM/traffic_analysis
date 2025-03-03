@@ -170,8 +170,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-#Random plots should not be committed
+# Random plots should not be committed
 plots/*
 
+# Wireshark outputs
+*.pcapng
 
-
+# VS code dirs
+.vscode/
