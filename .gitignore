@@ -178,3 +178,7 @@ plots/*
 
 # VS code dirs
 .vscode/
+
+# IMs should not be leaked
+organic_analysis/IM_files/messages
+organic_analysis/IM_files/DM_IDs.txt
