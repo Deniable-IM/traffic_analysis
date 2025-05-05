@@ -50,7 +50,7 @@ if __name__ == '__main__':
     print(f"Rate parameter = {1/lambda_param}")
     print(f"Estimated median {(np.log(2) / lambda_param)}")
     print(f"Sample median {time_deltas.median()}")
-
+    print(f'Sample size {time_deltas.count()}')
     mu = 1 / lambda_param
     b = 1 / (lambda_param * lambda_param)  
 
@@ -74,9 +74,9 @@ if __name__ == '__main__':
 
 
     
-    plt.xlabel('Time Delta (Seconds)')
+    plt.xlabel('Inter-Message Delay (Seconds)')
     plt.ylabel('Frequency')
-    plt.title('Histogram of Time Differences (Seconds)')
+    plt.title('Histogram of Inter-Message Delay (Seconds)')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Show Plot

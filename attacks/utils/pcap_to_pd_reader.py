@@ -24,9 +24,9 @@ class pcap_reader:
         cap.close()
 
         df = pd.DataFrame(data)
-        df_imd = self.add_imd_to_df(df)
+        # df_imd = self.add_imd_to_df(df)
 
-        return df_imd
+        return df
 
     def add_imd_to_df(self, df: pd.DataFrame) -> pd.DataFrame:
         for src_ip in df["Source IP"].unique():
