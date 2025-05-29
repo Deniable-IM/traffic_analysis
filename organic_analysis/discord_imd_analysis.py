@@ -49,6 +49,7 @@ if __name__ == '__main__':
     print(f"lambda param = {lambda_param}")
     print(f"Rate parameter = {1/lambda_param}")
     print(f"Estimated median {(np.log(2) / lambda_param)}")
+    print(f'Estimated average {1/lambda_param}')
     print(f"Sample median {time_deltas.median()}")
     print(f'Sample size {time_deltas.count()}')
     mu = 1 / lambda_param

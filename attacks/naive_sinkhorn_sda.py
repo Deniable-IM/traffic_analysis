@@ -7,17 +7,20 @@ pygm.set_backend("numpy")
 def _update_senders(senders, time_delta):
     updated = []
     for sender, time in senders:
-        remainding  = time - time_delta
-        if remainding >= 0:
-            updated.append((sender, remainding))
+        remaining  = time - time_delta
+        if remaining > 0:
+            updated.append((sender, remaining))
 
     return updated
 
 def _update_receivers(senders, receiver_ip, matrix):
-    receivers_in_senders = 0
+    receiver_in_senders = 0
     for sender, _ in senders:
         if sender == receiver_ip:
-            receivers_in_senders += 1
+            receiver_in_senders += 1
+
+    for sender, _ in senders:
+        if sender == receiver_ip:
             continue
 
         if sender not in matrix:
@@ -26,9 +29,9 @@ def _update_receivers(senders, receiver_ip, matrix):
         if receiver_ip not in matrix[sender]:
             matrix[sender][receiver_ip] = 0
 
-        matrix[sender][receiver_ip] += 1 / (len(senders) - receivers_in_senders)
+        matrix[sender][receiver_ip] += 1 / (len(senders) - receiver_in_senders)
     
-def naive_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_size = 1) -> pd.DataFrame:
+def naive_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_size = 1.0) -> pd.DataFrame:
     df = df.sort_values(by='Time').set_index(df['Time'])
     df = df.query('Protocol == "TLSv1.3"')
 
@@ -51,7 +54,7 @@ def naive_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_size 
     return pd.DataFrame(res, index=nn_matrix.index, columns=nn_matrix.columns)
 
 if __name__ == '__main__':
-    target_ip = "10.10.253.236" #Just an example, take the IP of the target user
+    target_ip = "10.10.248.42" #Just an example, take the IP of the target user
     server_ip = "10.10.248.2"
     window_size = 1
 

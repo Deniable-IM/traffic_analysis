@@ -25,13 +25,15 @@ if __name__ == "__main__":
     print(df)
     print(df.dtypes)
 
+    df = df.query('From == "46" or From == "57"')
+
     senders = df['From'].unique()
     sender_count = senders.size
     vheight = sender_count * 2
 
     fig, axs = plt.subplots(sender_count, sharex=True, figsize=(8, vheight))
 
-    for ax, sender in zip(axs, senders):
+    for ax, sender in zip(axs, senders, strict=True):
         to_plot = df.query("From == @sender")['IMD']
         ax.set_title(f'User {sender}')
         bin_count = 0
