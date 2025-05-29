@@ -185,3 +185,6 @@ organic_analysis/IM_files/DM_IDs.txt
 
 # Ignore random simulator output files
 **/messages.json
+sim_files/*
+**/output.csv
+sim_files/output.csv

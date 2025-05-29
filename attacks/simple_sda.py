@@ -41,9 +41,9 @@ def simple_sda(df: pd.DataFrame, rounds, target_ip, server_ip = "10.10.248.2", w
 
 
 if __name__ == '__main__':
-    target_ip = "10.10.249.103" #Just an example, take the IP of the target user
+    target_ip = "10.10.248.42" #Just an example, take the IP of the target user
     window_size = 1
-    rounds = 500
+    rounds = 1000
 
     df = pd.read_csv("sim_files/output.csv")
     
