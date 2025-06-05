@@ -34,14 +34,17 @@ def _update_receivers(senders, receiver_ip, matrix):
 
         matrix[sender][receiver_ip] += 1 / (len(senders) - receiver_in_senders)
     
-def deniable_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_size = 100.0) -> pd.DataFrame:
+def deniable_sinkhorn_sda(df: pd.DataFrame, target, regular_contacts, server_ip = "10.10.248.2", window_size = 100.0, viable_prune = False) -> pd.DataFrame:
     df = df.sort_values(by='Time')#.set_index(df['Time'])
-    df = df.query('Protocol == "TLSv1.3"')
-    deniable_df = find_deniable_sequences(df, imd_filter=1, burst_len=3, server_ip=server_ip)
+    df = df.query('Protocol == "TLSv1.2"')
+    deniable_df = find_deniable_sequences(df, imd_filter=1, burst_len=4, server_ip=server_ip)
     print(f'df len = {df.shape[0]}')
     print(f'den df len = {deniable_df.shape[0]}')
     # user_df = deniable_df.query('Source != @server_ip')
     # deniable_df = deniable_df.query('IsBurst == True and Source != @server_ip')    
+
+    regular_contact_prune = len(regular_contacts) != 0
+    print(f'Running attack with viable prune = {viable_prune}, and regular contact prune = {regular_contact_prune}')
 
     prev_time = df.iloc[0].Time
     senders = []
@@ -60,7 +63,24 @@ def deniable_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_si
         if row.IsBurst == True: # == True is necessary because of fucking course it is
             if row.BurstNo not in burst_tracker.keys():
                 burst_tracker[row.BurstNo] = [row.Index]
-                if row.Source in last_received.keys():
+
+                if regular_contact_prune and viable_prune and row.Source in last_received.keys():
+                    viable_senders = []
+                    if row.Source == target:
+                        for source, _, time, _ in senders:
+                            if source not in regular_contacts and time < last_received[row.Source]:
+                                viable_senders.append(source)
+                    elif row.Source in regular_contacts:
+                        for source, _, time, _ in senders:
+                            if source != target and time < last_received[row.Source]:
+                                viable_senders.append(source)
+                    else: 
+                        for source, _, time, _ in senders:
+                            if time < last_received[row.Source]:
+                                viable_senders.append(source)
+                    _update_receivers(viable_senders, row.Source, receivers)
+
+                elif viable_prune and row.Source in last_received.keys():
                     #update receivers, but filter unviable senders
                     viable_senders = []
                     for source, _, time, _ in senders:
@@ -69,6 +89,21 @@ def deniable_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_si
 
                     debug_update_receiver_count += 1
                     _update_receivers(viable_senders, row.Source, receivers)
+                elif regular_contact_prune:
+                    viable_senders = []
+                    if row.Source == target:
+                        for source, _, _, _ in senders:
+                            if source not in regular_contacts:
+                                viable_senders.append(source)
+                    elif row.Source in regular_contacts:
+                        for source, _, _, _ in senders:
+                            if source != target:
+                                viable_senders.append(source)
+                    else: 
+                        for source, _, _, _ in senders:
+                            viable_senders.append(source)
+                    _update_receivers(viable_senders, row.Source, receivers)
+
                 else:
                     viable_senders = []
                     for source, _, _, _ in senders:
@@ -84,34 +119,46 @@ def deniable_sinkhorn_sda(df: pd.DataFrame, server_ip = "10.10.248.2", window_si
         prev_time = row.Time
 
     nn_matrix = pd.DataFrame.from_dict(receivers).fillna(0)
-    print(f'Update receivers called {debug_update_receiver_count} times')
+    # print(nn_matrix)
     res = pygm.sinkhorn(nn_matrix.to_numpy())
     return pd.DataFrame(res, index=nn_matrix.index, columns=nn_matrix.columns)
 
 if __name__ == '__main__':
-    target_ip = "10.10.249.226" #Just an example, take the IP of the target user
+    target_ip = "10.10.254.234" #Just an example, take the IP of the target user
     server_ip = "10.10.248.2"
-    window_size = 90
+    window_size = 105
 
     df = pd.read_csv("sim_files/output.csv")
     
-    probs = deniable_sinkhorn_sda(df, server_ip=server_ip, window_size=window_size).to_dict()
+    regular_contacts = []
+    regular_contacts = ["10.10.249.10", "10.10.254.99", "10.10.248.208", "10.10.254.143", "10.10.255.86"]
 
-
-
+    probs = deniable_sinkhorn_sda(df, target_ip, regular_contacts, server_ip=server_ip, window_size=window_size, viable_prune=True)
+    # print(probs)
+    probs = probs.to_dict()
     user_table, ip_to_id_map = user_dataframe_dict_pair()
 
 
     target_user = user_table.query('UserIP == @target_ip')
     target_deniable_contacts = target_user['DeniableContactList'].tolist().pop()
-    regular_deniable_contacts = target_user['RegularContactList'].tolist().pop()
+    target_regular_contacts = target_user['RegularContactList'].tolist().pop()
+
+    normalization_factor = sum(probs[target_ip].values()) - probs[target_ip][target_ip]
+    probs[target_ip][target_ip] = 0
+
+    for k in probs[target_ip].keys():
+        probs[target_ip][k] /= normalization_factor
+        
+
 
     sorted_dict = dict(sorted(probs[target_ip].items(), key=lambda item: item[1]))
+    contact_count = len(sorted_dict.keys())
     for k, v in sorted_dict.items():
         id = ip_to_id_map[k]    
         if id in target_deniable_contacts:
-            print(f'{id} : {v} <-- Deniable contact')
-        elif id in regular_deniable_contacts:
-            print(f'{id} : {v} <-- Regular contact')
+            print(f'({contact_count}): {id} : {v} <-- Deniable contact')
+        elif id in target_regular_contacts:
+            print(f'({contact_count}): {id} : {v} <-- Regular contact')
         else:
-            print(f'{id} : {v}')
+            print(f'({contact_count}): {id} : {v}')
+        contact_count -= 1

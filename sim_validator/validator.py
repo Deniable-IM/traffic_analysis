@@ -25,7 +25,7 @@ if __name__ == "__main__":
     print(df)
     print(df.dtypes)
 
-    df = df.query('From == "46" or From == "57"')
+    df = df.query('From == "36" or From == "91"')
 
     senders = df['From'].unique()
     sender_count = senders.size
@@ -41,9 +41,16 @@ if __name__ == "__main__":
             bin_count = int(to_plot.unique().size / 8)
         else:
             bin_count = int(to_plot.unique().size / 2)
-        
         ax.hist(to_plot, bins=bin_count, edgecolor='blue', alpha=0.7, density=True)
+        time_deltas = to_plot
+        x = np.linspace(min(time_deltas), max(time_deltas), 100)
+        lambda_param = np.log(2) / time_deltas.median()
+        lambda_param = 1 / time_deltas.mean()
+        pdf = lambda_param * np.exp(-lambda_param * x)
+        # cdf = 1 - np.exp(-lambda_param * x)
+        # positive_half_laplace = (1 / 2 * b) * np.exp(- (abs(x - mu) / b))
 
+        ax.plot(x, pdf, 'r', linewidth=2)
 
 
 
